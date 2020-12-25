@@ -32,6 +32,7 @@ var proc_SimConnect_MenuDeleteItem *syscall.LazyProc
 var proc_SimConnect_AddClientEventToNotificationGroup *syscall.LazyProc
 var proc_SimConnect_SetNotificationGroupPriority *syscall.LazyProc
 var proc_SimConnect_Text *syscall.LazyProc
+var proc_SimConnect_TransmitClientEvent *syscall.LazyProc
 
 type SimConnect struct {
 	handle      unsafe.Pointer
@@ -82,6 +83,7 @@ func New(name string) (*SimConnect, error) {
 		proc_SimConnect_AddClientEventToNotificationGroup = mod.NewProc("SimConnect_AddClientEventToNotificationGroup")
 		proc_SimConnect_SetNotificationGroupPriority = mod.NewProc("SimConnect_SetNotificationGroupPriority")
 		proc_SimConnect_Text = mod.NewProc("SimConnect_Text")
+		proc_SimConnect_TransmitClientEvent = mod.NewProc("SimConnect_TransmitClientEvent")
 	}
 
 	// SimConnect_Open(
@@ -285,6 +287,28 @@ func (s *SimConnect) RequestDataOnSimObject(requestID, defineID, objectID, perio
 		return fmt.Errorf(
 			"SimConnect_RequestDataOnSimObject for requestID %d defineID %d error: %d %s",
 			requestID, defineID, r1, err,
+		)
+	}
+
+	return nil
+}
+
+func (s *SimConnect) TransmitClientEvent(event, data DWORD) error {
+	args := []uintptr{
+		uintptr(s.handle),
+		uintptr(SIMOBJECT_TYPE_USER),
+		uintptr(event),
+		uintptr(data),
+		uintptr(GROUP_PRIORITY_HIGHEST),
+		uintptr(16),
+	}
+
+	r1, _, err := proc_SimConnect_TransmitClientEvent.Call(args...)
+
+	if int32(r1) < 0 {
+		return fmt.Errorf(
+			"SimConnect_TransmitClientEvent for error: %d %s",
+			r1, err,
 		)
 	}
 
